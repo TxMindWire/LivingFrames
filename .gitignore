@@ -427,3 +427,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+keys/cert.pem
+keys/key.pem
+package.json
+server.js
