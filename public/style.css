@@ -154,17 +154,48 @@ button { font-family: inherit; }
 .series-card {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--panel);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
   box-shadow: 0 2px 6px rgba(91, 75, 99, 0.06);
 }
 .series-card:hover { border-color: var(--border-bright); }
+
+.series-open {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.series-delete {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-alt);
+  color: var(--danger);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.series-delete:hover { background: var(--danger-dim); border-color: var(--danger); }
+.series-delete:active { transform: scale(0.92); }
 
 .series-thumb {
   width: 64px;
@@ -239,7 +270,7 @@ button { font-family: inherit; }
 }
 
 .onion-overlay {
-  opacity: 0.3;
+  opacity: 0.1;
   pointer-events: none;
   /* nakładka nie powinna migać przy podmianie src między klatkami */
   transition: opacity 0.1s linear;

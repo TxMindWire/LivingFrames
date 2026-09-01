@@ -39,26 +39,39 @@ export async function renderMenuView({ onCreate, onOpenSeries }) {
   // czytane jest z atrybutu data-* w momencie kliknięcia, a nie z domknięcia
   // pętli. To całkowicie eliminuje ryzyko "złego" ID przy błędnie
   // działającej pętli / domknięciu w nietypowych silnikach przeglądarki.
-  listEl.addEventListener('click', (event) => {
-    const card = event.target.closest('.series-card');
-    if (!card) return;
-    const seriesId = card.dataset.seriesId;
-    if (seriesId) onOpenSeries(seriesId);
+  listEl.addEventListener('click', async (event) => {
+    const actionEl = event.target.closest('[data-action]');
+    if (!actionEl) return;
+    const card = actionEl.closest('.series-card');
+    const seriesId = card?.dataset.seriesId;
+    if (!seriesId) return;
+
+    if (actionEl.dataset.action === 'open') {
+      onOpenSeries(seriesId);
+    } else if (actionEl.dataset.action === 'delete') {
+      const name = card.querySelector('.series-name')?.textContent || 'tę serię';
+      const confirmed = window.confirm(`Usunąć „${name}” razem ze wszystkimi klatkami? Tej operacji nie można cofnąć.`);
+      if (!confirmed) return;
+      await storage.deleteSeries(seriesId);
+      await renderMenuView({ onCreate, onOpenSeries });
+    }
   });
 
   for (const series of seriesList) {
-    const card = document.createElement('button');
-    card.type = 'button';
+    const card = document.createElement('div');
     card.className = 'series-card';
     card.dataset.seriesId = series.id;
     card.innerHTML = `
-      <div class="series-thumb" data-thumb>
-        <span class="series-thumb-placeholder">◈</span>
-      </div>
-      <div class="series-info">
-        <div class="series-name">${escapeHtml(series.name)}</div>
-        <div class="series-meta">${series.frameCount} ${pluralFrames(series.frameCount)} · ${formatDate(series.updatedAt)}</div>
-      </div>
+      <button type="button" class="series-open" data-action="open">
+        <div class="series-thumb" data-thumb>
+          <span class="series-thumb-placeholder">◈</span>
+        </div>
+        <div class="series-info">
+          <div class="series-name">${escapeHtml(series.name)}</div>
+          <div class="series-meta">${series.frameCount} ${pluralFrames(series.frameCount)} · ${formatDate(series.updatedAt)}</div>
+        </div>
+      </button>
+      <button type="button" class="series-delete" data-action="delete" aria-label="Usuń serię „${escapeHtml(series.name)}”" title="Usuń serię">🗑</button>
     `;
     listEl.appendChild(card);
 
@@ -103,7 +116,7 @@ function menuTemplate() {
         <span class="brand-mark">◈</span>
         <div class="brand-text">
           <h1>KLATKA</h1>
-          <p class="subtitle">Film poklatkowy · sterowanie padem</p>
+          <p class="subtitle">Stwórz własny film</p>
         </div>
       </div>
       <button id="newSeriesBtn" class="btn-primary" type="button">+ Nowa seria</button>
