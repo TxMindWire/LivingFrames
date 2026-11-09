@@ -2,7 +2,7 @@
 
 // Wersjonuj przy każdej zmianie plików statycznych, żeby wymusić
 // odświeżenie cache u klientów.
-const CACHE_NAME = 'klatka-v1';
+const CACHE_NAME = 'klatka-v2';
 
 const APP_SHELL = [
 	'./',
@@ -13,7 +13,7 @@ const APP_SHELL = [
 	'./js/config.js',
 	'./js/storage.js',
 	'./js/camera.js',
-	'./js/gamepad.js',
+	'./js/InputController.js',
 	'./js/views/menu.js',
 	'./js/views/editor.js',
 	'./icons/icon.svg',

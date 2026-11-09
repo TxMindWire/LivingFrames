@@ -6,8 +6,11 @@
 export const CONFIG = Object.freeze({
 	// ---- Sterowanie padem ----
 	// Numery przycisków wg mapowania "standard" Gamepad API.
-	GAMEPAD_BUTTON_CAPTURE: 5,
-	GAMEPAD_BUTTON_PLAYBACK: 1,
+	CONTROL_EDITOR: {
+		CONTROL_SHUTTER: ['PAD_1_BUTTON_5', 'KEYBOARD_SPACE'],
+		CONTROL_PLAY: ['PAD_1_BUTTON_1', 'KEYBOARD_ENTER'],
+		CONTROL_BACK: ['PAD_1_BUTTON_3', 'KEYBOARD_ESCAPE'],
+	},
 
 	// ---- Podgląd klatek (odtwarzanie) ----
 	PLAYBACK_INTERVAL_MS: 250,
