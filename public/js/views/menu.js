@@ -3,114 +3,151 @@
  */
 
 import * as storage from '../storage.js';
+import InputController from '../InputController.js';
+import { CONFIG } from '../config.js';
 
 // Object URL-e miniaturek trzeba zwalniać między renderami, inaczej wyciekają.
 let activeThumbUrls = [];
 
 function revokeThumbUrls() {
-  activeThumbUrls.forEach((url) => URL.revokeObjectURL(url));
-  activeThumbUrls = [];
+	activeThumbUrls.forEach((url) => URL.revokeObjectURL(url));
+	activeThumbUrls = [];
 }
 
 export async function renderMenuView({ onCreate, onOpenSeries }) {
-  revokeThumbUrls();
+	revokeThumbUrls();
 
-  const root = document.getElementById('menuView');
-  root.innerHTML = menuTemplate();
+	const root = document.getElementById('menuView');
+	root.innerHTML = menuTemplate();
 
-  const listEl = root.querySelector('#seriesList');
-  const emptyEl = root.querySelector('#seriesEmpty');
-  const newBtn = root.querySelector('#newSeriesBtn');
+	const listEl = root.querySelector('#seriesList');
+	const emptyEl = root.querySelector('#seriesEmpty');
+	const newBtn = root.querySelector('#newSeriesBtn');
 
-  newBtn.addEventListener('click', () => onCreate());
 
-  const seriesList = await storage.listSeries();
+	newBtn.addEventListener('click', () => { inputController.stop(); onCreate();} );
 
-  if (seriesList.length === 0) {
-    emptyEl.classList.remove('is-hidden');
-    listEl.classList.add('is-hidden');
-    return;
-  }
+	const seriesList = await storage.listSeries();
 
-  emptyEl.classList.add('is-hidden');
-  listEl.classList.remove('is-hidden');
+	if (seriesList.length === 0) {
+		emptyEl.classList.remove('is-hidden');
+		listEl.classList.add('is-hidden');
+		return;
+	}
 
-  // Jeden listener na kontener zamiast osobnego na każdą kartę — ID serii
-  // czytane jest z atrybutu data-* w momencie kliknięcia, a nie z domknięcia
-  // pętli. To całkowicie eliminuje ryzyko "złego" ID przy błędnie
-  // działającej pętli / domknięciu w nietypowych silnikach przeglądarki.
-  listEl.addEventListener('click', async (event) => {
-    const actionEl = event.target.closest('[data-action]');
-    if (!actionEl) return;
-    const card = actionEl.closest('.series-card');
-    const seriesId = card?.dataset.seriesId;
-    if (!seriesId) return;
+	emptyEl.classList.add('is-hidden');
+	listEl.classList.remove('is-hidden');
 
-    if (actionEl.dataset.action === 'open') {
-      onOpenSeries(seriesId);
-    } else if (actionEl.dataset.action === 'delete') {
-      const name = card.querySelector('.series-name')?.textContent || 'tę serię';
-      const confirmed = window.confirm(`Usunąć „${name}” razem ze wszystkimi klatkami? Tej operacji nie można cofnąć.`);
-      if (!confirmed) return;
-      await storage.deleteSeries(seriesId);
-      await renderMenuView({ onCreate, onOpenSeries });
-    }
-  });
+	// Jeden listener na kontener zamiast osobnego na każdą kartę — ID serii
+	// czytane jest z atrybutu data-* w momencie kliknięcia, a nie z domknięcia
+	// pętli. To całkowicie eliminuje ryzyko "złego" ID przy błędnie
+	// działającej pętli / domknięciu w nietypowych silnikach przeglądarki.
+	listEl.addEventListener('click', async (event) => {
+		const actionEl = event.target.closest('[data-action]');
+		if (!actionEl) return;
+		const card = actionEl.closest('.series-card');
+		const seriesId = card?.dataset.seriesId;
+		if (!seriesId) return;
 
-  for (const series of seriesList) {
-    const card = document.createElement('div');
-    card.className = 'series-card';
-    card.dataset.seriesId = series.id;
-    card.innerHTML = `
-      <button type="button" class="series-open" data-action="open">
-        <div class="series-thumb" data-thumb>
-          <span class="series-thumb-placeholder">◈</span>
-        </div>
-        <div class="series-info">
-          <div class="series-name">${escapeHtml(series.name)}</div>
-          <div class="series-meta">${series.frameCount} ${pluralFrames(series.frameCount)} · ${formatDate(series.updatedAt)}</div>
-        </div>
-      </button>
-      <button type="button" class="series-delete" data-action="delete" aria-label="Usuń serię „${escapeHtml(series.name)}”" title="Usuń serię">🗑</button>
-    `;
-    listEl.appendChild(card);
+		if (actionEl.dataset.action === 'open') {
+			inputController.stop();
+			onOpenSeries(seriesId);
+		} else if (actionEl.dataset.action === 'delete') {
+			const name = card.querySelector('.series-name')?.textContent || 'tę serię';
+			const confirmed = window.confirm(`Usunąć „${name}” razem ze wszystkimi klatkami? Tej operacji nie można cofnąć.`);
+			if (!confirmed) return;
+			await storage.deleteSeries(seriesId);
+			await renderMenuView({ onCreate, onOpenSeries });
+		}
+ 	});
 
-    storage.getFirstFrame(series.id).then((frame) => {
-      if (!frame) return;
-      const thumbEl = card.querySelector('[data-thumb]');
-      const url = URL.createObjectURL(frame.blob);
-      activeThumbUrls.push(url);
-      thumbEl.innerHTML = '';
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = '';
-      thumbEl.appendChild(img);
-    });
-  }
+  	for (const series of seriesList) {
+		const card = document.createElement('div');
+		card.className = 'series-card';
+		card.dataset.seriesId = series.id;
+    	card.innerHTML = `
+		<button type="button" class="series-open menu-button" data-action="open">
+			<div class="series-thumb" data-thumb>
+			<span class="series-thumb-placeholder">◈</span>
+			</div>
+			<div class="series-info">
+			<div class="series-name">${escapeHtml(series.name)}</div>
+			<div class="series-meta">${series.frameCount} ${pluralFrames(series.frameCount)} · ${formatDate(series.updatedAt)}</div>
+			</div>
+		</button>
+		<button type="button" class="series-delete  menu-button" data-action="delete" aria-label="Usuń serię „${escapeHtml(series.name)}”" title="Usuń serię">🗑</button>
+		`;
+    	listEl.appendChild(card);
+
+    	storage.getFirstFrame(series.id).then((frame) => {
+			if (!frame) return;
+			const thumbEl = card.querySelector('[data-thumb]');
+			const url = URL.createObjectURL(frame.blob);
+			activeThumbUrls.push(url);
+			thumbEl.innerHTML = '';
+			const img = document.createElement('img');
+			img.src = url;
+			img.alt = '';
+			thumbEl.appendChild(img);
+    	});
+  	}
+
+	
+	let activeIndex = -1;
+
+	const updateActiveIndex = (ch) => {
+		const elementsForPadActivation = document.querySelectorAll('.menu-button');
+		activeIndex = (activeIndex + ch + elementsForPadActivation.length) % elementsForPadActivation.length;
+		for(let i = 0; i < elementsForPadActivation.length; i++) {
+			elementsForPadActivation[i].classList.toggle("pad-activated", (i == activeIndex));
+			
+		}
+		elementsForPadActivation[activeIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		
+	};
+
+	const inputController = new InputController(CONFIG.CONTROL_MENU);
+	inputController.onButtonDown((action) => {
+		const elementsForPadActivation = document.querySelectorAll('.menu-button');
+		switch(action) {
+			case 'CONTROL_NEXT': 
+                updateActiveIndex(1);
+			break;
+			
+			case 'CONTROL_PREV': 
+                updateActiveIndex(-1);
+			break;
+			
+			case 'CONTROL_GO':
+                elementsForPadActivation[activeIndex]?.click();
+			break;
+
+		}
+	});
 }
 
 function pluralFrames(n) {
-  if (n === 1) return 'klatka';
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return 'klatki';
-  return 'klatek';
+	if (n === 1) return 'klatka';
+	const mod10 = n % 10;
+	const mod100 = n % 100;
+	if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return 'klatki';
+	return 'klatek';
 }
 
 function formatDate(ts) {
-  const d = new Date(ts);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+	const d = new Date(ts);
+	const pad = (n) => String(n).padStart(2, '0');
+	return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+	const div = document.createElement('div');
+	div.textContent = str;
+	return div.innerHTML;
 }
 
 function menuTemplate() {
-  return `
+  	return `
     <div class="menu-header">
       <div class="brand">
         <span class="brand-mark">◈</span>
@@ -119,7 +156,7 @@ function menuTemplate() {
           <p class="subtitle">Stwórz własny film</p>
         </div>
       </div>
-      <button id="newSeriesBtn" class="btn-primary" type="button">+ Nowa seria</button>
+      <button id="newSeriesBtn" class="btn-primary  menu-button" type="button">+ Nowa seria</button>
     </div>
 
     <div id="seriesEmpty" class="empty-state is-hidden">
@@ -135,5 +172,5 @@ function menuTemplate() {
     </div>
 
     <div id="seriesList" class="series-list"></div>
-  `;
+  	`;
 }

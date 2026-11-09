@@ -10,6 +10,7 @@ import InputController from '../InputController.js';
 
 
 export async function openEditorView(seriesId, { onBack }) {
+
 	const root = document.getElementById('editorView');
 	root.innerHTML = editorTemplate();
 
@@ -20,8 +21,6 @@ export async function openEditorView(seriesId, { onBack }) {
 	const stripEl = root.querySelector('#frameStrip');
 	const seriesNameEl = root.querySelector('#seriesName');
 	const frameCounterEl = root.querySelector('#frameCounter');
-	const padDot = root.querySelector('#padDot');
-	const padStatusText = root.querySelector('#padStatusText');
 	const backBtn = root.querySelector('#backBtn');
 	const captureBtn = root.querySelector('#captureBtn');
 	const playBtn = root.querySelector('#playBtn');
@@ -216,20 +215,6 @@ export async function openEditorView(seriesId, { onBack }) {
 		}
 	});
 
-	const updatePadConnection = (connected) => {
-		padDot.classList.toggle('ok', connected);
-		padStatusText.textContent = connected
-			? `pad podłączony`
-			: 'brak pada — użyj przycisków na ekranie';
-	}
-
-	inputController.onPadConnect(() => {
-		updatePadConnection(true);
-	});
-
-	inputController.onPadDisconnect(() => {
-		updatePadConnection(false);
-	});
 
 	captureBtn.addEventListener('click', handleCapture);
 	playBtn.addEventListener('click', handlePlaybackToggle);
@@ -272,10 +257,6 @@ function editorTemplate() {
 		<button id="backBtn" class="btn-ghost" type="button">← Menu</button>
 		<div class="editor-title">
 			<h2 id="seriesName">—</h2>
-		</div>
-		<div class="status-chip" id="padStatus">
-			<span class="dot" id="padDot"></span>
-			<span id="padStatusText">szukam pada…</span>
 		</div>
 		</header>
 
